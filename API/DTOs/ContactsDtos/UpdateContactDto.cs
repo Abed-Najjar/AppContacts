@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace API.DTOs;
+namespace API.DTOs.ContactsDtos;
 
-public class ContactDto
+public class UpdateContactDto
 {
     [Required]
     [MaxLength(10)]

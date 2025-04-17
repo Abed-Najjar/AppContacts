@@ -5,11 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Repositories;
 
-public class ContactsRepository<T>(AppDbContext context) : IContactsRepository<T>
+public class ContactsRepository<T>(AppDbContext context) : IContactsRepository<Contacts>
 {
     public async Task<AppResponse<Contacts>> AddContact(Contacts contact)
     {
-        await context.Contacts.AddAsync(contact);
 
         if(contact == null)
         {
@@ -18,6 +17,7 @@ public class ContactsRepository<T>(AppDbContext context) : IContactsRepository<T
 
         try
         {
+            await context.Contacts.AddAsync(contact);
             return new AppResponse<Contacts>(contact);
         }
         catch(Exception ex)
@@ -86,11 +86,11 @@ public class ContactsRepository<T>(AppDbContext context) : IContactsRepository<T
         try
         {
             // All fields gets updated again, even if some of them were not changed.
-            //context.Update(updatedContactDetails); 
+            context.Update(updatedContactDetails); 
             
             // Copies values from updatedContactDetails into the tracked entity,
             // allowing more control over what changes.
-            context.Entry(contact).CurrentValues.SetValues(updatedContactDetails);
+            //context.Entry(contact).CurrentValues.SetValues(updatedContactDetails);
 
             return new AppResponse<Contacts>(contact);
         }

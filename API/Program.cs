@@ -1,27 +1,24 @@
-using API.Data;
-using API.Entities;
-using API.Repositories;
-using API.UnitOfWork;
-using Microsoft.EntityFrameworkCore;
+using API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddAppServices(builder.Configuration);
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add DbContext
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
-
-
-// Add services to the container
-builder.Services.AddScoped<IContactsRepository<Contacts>,ContactsRepository<Contacts>>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
 builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", builder => builder
+     //.AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials());
+});
 
 var app = builder.Build();
 
@@ -32,9 +29,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Add Middleware
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
+app.UseCors("CorsPolicy");
+// Endpoint mapping
 app.MapControllers();
+
 app.Run();
 
 

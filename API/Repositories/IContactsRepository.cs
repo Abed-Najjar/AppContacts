@@ -3,7 +3,7 @@ using API.Response;
 
 namespace API.Repositories;
 
-public interface IContactsRepository<T>
+public interface IContactsRepository<Contacts>
 {
     Task<AppResponse<Contacts>> AddContact(Contacts contact);
     Task<AppResponse<List<Contacts>>> GetAllContacts();
