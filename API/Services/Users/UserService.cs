@@ -158,12 +158,14 @@ namespace API.Services.Users
             try
             {
                 if(loginDto == null) 
-                return new AppResponse<LoginDto>(null, "Enter a valid username or password", 404,false);
-            
-            var user = await UnitOfWork.UserRepository.GetUserByName(loginDto.Username);
+                    return new AppResponse<LoginDto>(null, "Enter a valid username or password", 404,false);
 
-            if(user.Data == null || user.Data.UserName != loginDto.Username) // checking if username entered matches any username.
-                return new AppResponse<LoginDto>(null, "Invaild username or password", 404, false);
+                loginDto.Username = loginDto.Username.ToLower();
+                
+                var user = await UnitOfWork.UserRepository.GetUserByName(loginDto.Username);
+
+                if(user.Data == null || user.Data.UserName != loginDto.Username) // checking if username entered matches any username.
+                    return new AppResponse<LoginDto>(null, "Invaild username or password", 404, false);
             else
             {   // if username matched, check hashed password and entered password.
                 var verifyPassword = PasswordHasher.VerifyHashedPassword(user.Data.PasswordHash, loginDto.Password);
