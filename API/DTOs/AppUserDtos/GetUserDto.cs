@@ -9,5 +9,7 @@ public class GetUserDto
     [Required]
     public required string Username { get; set; }
     public string? Email { get; set; }
+    [Required]
+    public required string Passwordhash { get; set; }
     
 }

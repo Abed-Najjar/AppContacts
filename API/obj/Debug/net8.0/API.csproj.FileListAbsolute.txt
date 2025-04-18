@@ -149,4 +149,3 @@ C:\Users\Abdulrahman Al Najja\Desktop\.NET Projects\AppContacts\api\obj\Debug\ne
 C:\Users\Abdulrahman Al Najja\Desktop\.NET Projects\AppContacts\api\bin\Debug\net8.0\Isopoh.Cryptography.Argon2.dll
 C:\Users\Abdulrahman Al Najja\Desktop\.NET Projects\AppContacts\api\bin\Debug\net8.0\Isopoh.Cryptography.Blake2b.dll
 C:\Users\Abdulrahman Al Najja\Desktop\.NET Projects\AppContacts\api\bin\Debug\net8.0\Isopoh.Cryptography.SecureArray.dll
-C:\Users\Abdulrahman Al Najja\Desktop\.NET Projects\AppContacts\API\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

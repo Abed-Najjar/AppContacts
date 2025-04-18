@@ -1,13 +1,13 @@
-    using API.Data;
-    using API.Entities;
-    using API.Repositories;
-    using API.UoW;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.EntityFrameworkCore;
-    using API.Interfaces;
-    using API.Services;
-    using API.Services.Contact;
+using API.Data;
+using API.Entities;
+using API.Repositories;
+using API.UoW;
+using Microsoft.EntityFrameworkCore;
+using API.Interfaces;
+using API.Services;
+using API.Services.Contact;
 using API.Services.Users;
+using API.Services.Argon;
 
 namespace API.Extensions;
 
@@ -26,7 +26,7 @@ namespace API.Extensions;
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IUserRepository<AppUser>, UserRepository<AppUser>>();
             services.AddScoped<IContactService, ContactService>();
-            services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher>();
+            services.AddScoped<IArgonPasswordHasher, ArgonPasswordHasher>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // ✅ AutoMapper

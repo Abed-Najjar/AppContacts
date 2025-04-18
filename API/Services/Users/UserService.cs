@@ -1,21 +1,17 @@
 using API.DTOs.AppUserDtos;
 using API.Entities;
 using API.Response;
+using API.Services.Argon;
 using API.UoW;
 using AutoMapper;
 
 namespace API.Services.Users
 {
-    public class UserService : IUserService
+    public class UserService(IMapper mapper, IUnitOfWork unitOfWork, IArgonPasswordHasher passwordHasher) : IUserService
     {
-        private readonly IUnitOfWork UnitOfWork;
-        private readonly IMapper Mapper;
-
-        public UserService(IMapper mapper, IUnitOfWork unitOfWork)
-        {
-            UnitOfWork = unitOfWork;
-            Mapper = mapper;
-        }
+        private readonly IUnitOfWork UnitOfWork = unitOfWork;
+        private readonly IMapper Mapper = mapper;
+        private readonly IArgonPasswordHasher PasswordHasher = passwordHasher;
 
         public async Task<AppResponse<List<GetUsersDto>>> GetAll()
         {
@@ -23,10 +19,10 @@ namespace API.Services.Users
             {
                 var users = await UnitOfWork.UserRepository.GetAllUsers();
 
-                if(users.Data == null || !users.Success)
+                if(users.Data == null || users.Data.Count == 0)
                     return new AppResponse<List<GetUsersDto>>(null, "Users not found", 500,false);
 
-                var usersDto = Mapper.Map<List<GetUsersDto>>(users);
+                var usersDto = Mapper.Map<List<GetUsersDto>>(users.Data);
 
                 return new AppResponse<List<GetUsersDto>>(usersDto);
             }
@@ -48,9 +44,32 @@ namespace API.Services.Users
                     return new AppResponse<GetUserDto>(null, "User was not found", 404, false);
                 }
 
-                var userDto = Mapper.Map<GetUserDto>(user); 
+                var userDto = Mapper.Map<GetUserDto>(user.Data); 
 
                 return new AppResponse<GetUserDto>(userDto);
+            }
+            catch (Exception ex)
+            {
+                return new AppResponse<GetUserDto>(null, ex.Message, 500, false);
+            }
+
+        }
+        public async Task<AppResponse<GetUserDto>> GetByUsername(string username)
+        {
+            try
+            {
+                username = username.ToLower();
+
+                var user = await UnitOfWork.UserRepository.GetUserByName(username);
+
+                if (user.Data == null || !user.Success)
+                {
+                    return new AppResponse<GetUserDto>(null, "User was not found", 404, false);
+                }
+
+                var resultDto = Mapper.Map<GetUserDto>(user.Data); 
+
+                return new AppResponse<GetUserDto>(resultDto);
             }
             catch (Exception ex)
             {
@@ -65,10 +84,12 @@ namespace API.Services.Users
             if(registerDto == null) 
                 return new AppResponse<RegisterDto>(null,"Check the entered registration information", 404, false);
             
+
             try
             {
-
-                var user = Mapper.Map<AppUser>(registerDto);                
+                registerDto.Username = registerDto.Username.ToLower();
+                var user = Mapper.Map<AppUser>(registerDto);     
+                user.PasswordHash = PasswordHasher.HashPassword(registerDto.Passwordhash);         
                 await UnitOfWork.UserRepository.AddUser(user);
                 await UnitOfWork.Complete();
                 var resultDto = Mapper.Map<RegisterDto>(user);
@@ -89,7 +110,7 @@ namespace API.Services.Users
             
             try
             {
-                var removedUserDto = Mapper.Map<RemoveUserDto>(user);
+                var removedUserDto = Mapper.Map<RemoveUserDto>(user.Data);
                 await UnitOfWork.UserRepository.DeleteUser(id);
                 await UnitOfWork.Complete();
                 return new AppResponse<RemoveUserDto>(removedUserDto);                 
@@ -103,16 +124,25 @@ namespace API.Services.Users
 
         public async Task<AppResponse<UpdateUserDto>> UpdateUser(int id, UpdateUserDto updatedUserDto)
         {
-            var userRespone = await UnitOfWork.UserRepository.GetUserById(id);
+            if(updatedUserDto == null)
+                return new AppResponse<UpdateUserDto>(null, "Enter your information", 404, false);
 
-            if (userRespone.Data == null || !userRespone.Success)
+            var userResponse = await UnitOfWork.UserRepository.GetUserById(id);
+
+            if (userResponse.Data == null || !userResponse.Success)
                 return new AppResponse<UpdateUserDto>(null, "Failed to update user (does not exist)", 404, false);
 
-            var user = userRespone.Data;
+            var user = userResponse.Data;
 
             try
             {
+                updatedUserDto.Username = updatedUserDto.Username!.ToLower();
                 Mapper.Map(updatedUserDto, user);
+                if(user.PasswordHash != null)
+                {
+                    user.PasswordHash = PasswordHasher.HashPassword(user.PasswordHash);
+                }
+
                 await UnitOfWork.UserRepository.UpdateUser(id, user);
                 await UnitOfWork.Complete();
                 return new AppResponse<UpdateUserDto>(updatedUserDto, "Updated user successfully", 200,true);
@@ -121,8 +151,35 @@ namespace API.Services.Users
             {
                 return new AppResponse<UpdateUserDto>(null, ex.Message,500,false);
             }
-
-
         }
+
+        public async Task<AppResponse<LoginDto>> Login(LoginDto loginDto)
+        {
+            try
+            {
+                if(loginDto == null) 
+                return new AppResponse<LoginDto>(null, "Enter a valid username or password", 404,false);
+            
+            var user = await UnitOfWork.UserRepository.GetUserByName(loginDto.Username);
+
+            if(user.Data == null || user.Data.UserName != loginDto.Username) // checking if username entered matches any username.
+                return new AppResponse<LoginDto>(null, "Invaild username or password", 404, false);
+            else
+            {   // if username matched, check hashed password and entered password.
+                var verifyPassword = PasswordHasher.VerifyHashedPassword(user.Data.PasswordHash, loginDto.Password);
+                if(verifyPassword != Microsoft.AspNetCore.Identity.PasswordVerificationResult.Success)
+                    return new AppResponse<LoginDto>(null, "Invalid password",404,false);
+            }
+            
+            return new AppResponse<LoginDto>(loginDto);
+
+            }
+            catch (Exception ex)
+            {
+                return new AppResponse<LoginDto>(null, ex.Message, 500,false);
+            }
+
+        }       
+
     }
 }

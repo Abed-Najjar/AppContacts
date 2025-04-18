@@ -15,15 +15,7 @@ namespace API.Controllers
         [HttpGet("get-users")]
         public async Task<AppResponse<List<GetUsersDto>>> GetAll()
         {
-            try
-            {
-                return await userService.GetAll();
-            }
-            catch (Exception )
-            {
-
-                throw;
-            }
+            return await userService.GetAll();
         }
 
         [HttpGet("get-user/{id:int}")]
@@ -31,6 +23,13 @@ namespace API.Controllers
         {            
             return await userService.GetById(id);   
         }
+
+        [HttpGet("get-user/{username}")]
+        public async Task<AppResponse<GetUserDto>> GetByName(string username)
+        {            
+            return await userService.GetByUsername(username);
+        }
+
 
         [HttpPost("create-user")]
         public async Task<AppResponse<RegisterDto>> CreateUser(RegisterDto registerDto)
@@ -48,6 +47,11 @@ namespace API.Controllers
         public async Task<AppResponse<UpdateUserDto>> UpdateUser(int id, UpdateUserDto updatedUserDto)
         {
             return await userService.UpdateUser(id, updatedUserDto);
+        }
+        [HttpPost("login")]
+        public async Task<AppResponse<LoginDto>> Login(LoginDto loginDto)
+        {
+            return await userService.Login(loginDto);
         }
     }
 }

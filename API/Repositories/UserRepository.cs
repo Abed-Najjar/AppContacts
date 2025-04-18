@@ -8,13 +8,13 @@ namespace API.Repositories;
 
 public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
 {
-   // private readonly AppDbContext context = context;
+   private readonly AppDbContext _context = context;
 
     public async Task<AppResponse<List<AppUser>>> GetAllUsers()
     {
         try
         {
-            var users = await context.Users.ToListAsync();
+            var users = await _context.Users.ToListAsync();
 
             return new AppResponse<List<AppUser>>(users);
         }
@@ -29,7 +29,7 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
     {
         try
         {
-            var user = await context.Users.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
 
             if (user == null)
             {
@@ -45,9 +45,29 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
 
     }
 
+    public async Task<AppResponse<AppUser>> GetUserByName(string username)
+    {
+        try
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
+
+            if (user == null)
+                return new AppResponse<AppUser>(null, "User does not exist", 404, false);
+
+            if(user.UserName != username)
+                return new AppResponse<AppUser>(null, "Username does not match with anyone",404,false);
+
+            return new AppResponse<AppUser>(user);
+        }
+        catch (Exception ex)
+        {
+            return new AppResponse<AppUser>(null, ex.Message, 500, false);
+        }
+    }
+
     public async Task<AppResponse<AppUser>> AddUser(AppUser register)
     {
-        var existingUser = await context.Users
+        var existingUser = await _context.Users
             .AnyAsync(u => u.UserName == register.UserName || u.Email == register.Email);
 
         if (existingUser)
@@ -61,12 +81,11 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
             {
                 UserName = register.UserName,
                 Email = register.Email,
-                // Hashing the password (you'd implement Argon2 here)
-                PasswordHash = register.PasswordHash // Implement password hashing logic
+                PasswordHash = register.PasswordHash 
             };
 
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
             return new AppResponse<AppUser>(user);
         }
         catch (Exception ex)
@@ -77,7 +96,7 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
 
     public async Task<AppResponse<AppUser>> DeleteUser(int id)
     {
-        var user = await context.Users.FindAsync(id);
+        var user = await _context.Users.FindAsync(id);
         if (user == null)
         {
             return new AppResponse<AppUser>(null, "Failed to remove user (does not exist)", 404, false);
@@ -85,9 +104,9 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
 
         try
         {
-            context.Users.Remove(user);
+            _context.Users.Remove(user);
 
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             return new AppResponse<AppUser>(user, "User removed successfully", 200, true);
         }
@@ -101,7 +120,7 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
 
     public async Task<AppResponse<AppUser>> UpdateUser(int id, AppUser updatedUserDetails)
     {
-        var user = await context.Users.FindAsync(id);
+        var user = await _context.Users.FindAsync(id);
         if (user == null || updatedUserDetails.UserName == null)
         {
             return new AppResponse<AppUser>(null, "Failed to update user (does not exist)", 404, false);
@@ -112,8 +131,8 @@ public class UserRepository<T>(AppDbContext context) : IUserRepository<AppUser>
             user.UserName = updatedUserDetails.UserName;
             user.Email = updatedUserDetails.Email;
 
-            context.Users.Update(user);
-            await context.SaveChangesAsync();
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
 
             return new AppResponse<AppUser>(user, "Updated user successfully", 200, true);
         }

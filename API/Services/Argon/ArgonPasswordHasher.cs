@@ -1,14 +1,13 @@
-using API.Entities;
 using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace API.Services
-{
-    public class PasswordHasher : IPasswordHasher<AppUser>
+namespace API.Services.Argon;
+
+    public class ArgonPasswordHasher : IArgonPasswordHasher
     {
-        public string HashPassword(AppUser user, string password)
+        public string HashPassword(string password)
         {
             // Generate a new salt for each user
             var salt = GenerateSalt();
@@ -31,15 +30,15 @@ namespace API.Services
             var encodedHash = config.EncodeString(hash.Buffer);
 
             // Combine salt and hash into one string to store (delimited)
-            return $"{salt}${encodedHash}";
+            return $"{salt}||{encodedHash}";
         }
 
-        public PasswordVerificationResult VerifyHashedPassword(AppUser user, string hashedPassword, string providedPassword)
+        public PasswordVerificationResult VerifyHashedPassword(string hashedPassword, string providedPassword)
         {
             try
             {
                 // Split salt and hash from the stored value
-                var parts = hashedPassword.Split('$');
+                var parts = hashedPassword.Split("||");
                 if (parts.Length != 2)
                     return PasswordVerificationResult.Failed;
 
@@ -64,6 +63,11 @@ namespace API.Services
                 using var hash = hasher.Hash();
 
                 var reEncodedHash = config.EncodeString(hash.Buffer);
+                Console.WriteLine($"Stored hash: {hashedPassword}");
+                Console.WriteLine($"Salt: {salt}");
+                Console.WriteLine($"Recomputed hash: {reEncodedHash}");
+                Console.WriteLine($"Original encoded: {encodedHash}");
+
 
                 if (reEncodedHash == encodedHash)
                     return PasswordVerificationResult.Success;
@@ -84,4 +88,4 @@ namespace API.Services
             return Convert.ToBase64String(saltBytes);
         }
     }
-}
+
